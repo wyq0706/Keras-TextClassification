@@ -7,10 +7,11 @@
 
 
 from keras_adaptive_softmax import AdaptiveEmbedding, AdaptiveSoftmax
-from keras_bert import get_custom_objects as get_bert_custom_objects
+from keras_bert import get_custom_objects as get_bert_custom_objects, gelu
 from keras_position_wise_feed_forward import FeedForward
 from keras_layer_normalization import LayerNormalization
-from keras_bert.activations.gelu_fallback import gelu
+# from keras.activations import
+# from keras_bert.activations.gelu_fallback import gelu
 from keras_multi_head import MultiHeadAttention
 from keras_bert.layers import Masked, Extract
 from keras_pos_embd import PositionEmbedding
@@ -228,9 +229,13 @@ def load_brightmart_albert_zh_checkpoint(checkpoint_path, **kwargs):
     :return:
     """
     config = {}
+    print("checkpoint_path", checkpoint_path)
     for file_name in os.listdir(checkpoint_path):
-        if file_name.startswith('bert_config.json'):
+        print("checkpoint_path",checkpoint_path)
+        print(file_name)
+        if file_name.startswith('albert_config_base.json'):
             with open(os.path.join(checkpoint_path, file_name)) as reader:
+                print("yes")
                 config = json.load(reader)
             break
 
@@ -242,6 +247,7 @@ def load_brightmart_albert_zh_checkpoint(checkpoint_path, **kwargs):
     training = kwargs['training']
     # config['max_position_embeddings'] = config['max_position_embeddings'] = kwargs['len_max']
     _set_if_not_existed('training', True)
+    print("config",config)
     _set_if_not_existed('token_num', config['vocab_size'])
     _set_if_not_existed('pos_num', config['max_position_embeddings'])
     _set_if_not_existed('seq_len', config['max_position_embeddings'])
@@ -260,19 +266,25 @@ def load_brightmart_albert_zh_checkpoint(checkpoint_path, **kwargs):
 
     def _checkpoint_loader(checkpoint_file):
         def _loader(name):
-            return tf.train.load_variable(checkpoint_file, name)
+            print(checkpoint_file,name)
+            return tf.train.load_variable(checkpoint_file,name)
         return _loader
 
     loader = _checkpoint_loader(
-        os.path.join(checkpoint_path, 'bert_model.ckpt'))
+        os.path.join(checkpoint_path, 'albert_model.ckpt'))
+
+    reader = tf.compat.v1.train.NewCheckpointReader(checkpoint_path + "/albert_model.ckpt")
+    print(reader.debug_string().decode("utf-8"))
 
     model.get_layer(name='Embed-Token').set_weights([
         loader('bert/embeddings/word_embeddings'),
         loader('bert/embeddings/word_embeddings_2'),
     ])
+    print("once")
     model.get_layer(name='Embed-Segment').set_weights([
         loader('bert/embeddings/token_type_embeddings'),
     ])
+    print("second")
     model.get_layer(name='Embedding-Position').set_weights([
         loader('bert/embeddings/position_embeddings'),
     ])

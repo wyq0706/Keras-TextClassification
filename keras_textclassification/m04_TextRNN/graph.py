@@ -24,7 +24,7 @@ class TextRNNGraph(graph):
         self.rnn_units = hyper_parameters['model'].get('rnn_units', 256)
         super().__init__(hyper_parameters)
 
-    def create_model(self, hyper_parameters):
+    def create_model(self, hyper_parameters,ifSet=False):
         """
             构建神经网络
         :param hyper_parameters:json,  hyper parameters of network
@@ -55,7 +55,14 @@ class TextRNNGraph(graph):
             x = Dropout(self.dropout)(x)
         x = Flatten()(x)
         # 最后就是softmax
-        dense_layer = Dense(self.label, activation=self.activate_classify)(x)
+        if not ifSet:
+            dense_layer = Dense(units=self.label, activation=self.activate_classify)(x)
+        else:
+            dense_layer = Dense(units=self.label, activation=self.special_activation)(x)
         output = [dense_layer]
         self.model = Model(self.word_embedding.input, output)
         self.model.summary(120)
+
+    def special_activation(self,x):
+        import tensorflow as tf
+        return tf.concat([tf.keras.activations.softmax(x[:,0:3]),tf.keras.activations.sigmoid(x[:,3:])],1)

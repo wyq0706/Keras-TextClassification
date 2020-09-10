@@ -9,7 +9,7 @@
 import pathlib
 import sys
 import os
-project_path = str(pathlib.Path(os.path.abspath(__file__)).parent.parent.parent)
+project_path = str(pathlib.Path(os.path.abspath(__file__)).parent.parent)
 sys.path.append(project_path)
 # 地址
 from keras_textclassification.conf.path_config import path_model, path_fineture, path_model_dir, path_hyper_parameters

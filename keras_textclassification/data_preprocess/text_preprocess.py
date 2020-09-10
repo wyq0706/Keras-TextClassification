@@ -6,6 +6,7 @@
 
 
 from keras_textclassification.conf.path_config import path_model_dir
+
 path_fast_text_model_vocab2index = path_model_dir + 'vocab2index.json'
 path_fast_text_model_l2i_i2l = path_model_dir + 'l2i_i2l.json'
 
@@ -19,8 +20,7 @@ import json
 import re
 import os
 
-
-__all__  = ["PreprocessText", "PreprocessTextMulti", "PreprocessSim"]
+__all__ = ["PreprocessText", "PreprocessTextMulti", "PreprocessSim"]
 
 __tools__ = ["txt_read", "txt_write", "extract_chinese", "read_and_process",
              "preprocess_label_ques", "save_json", "load_json", "delete_file",
@@ -110,9 +110,11 @@ def preprocess_label_ques(path):
                 break
             ques = line_json['title']
             label = line_json['category'][0:2]
-            line_x = " ".join([extract_chinese(word) for word in list(jieba.cut(ques, cut_all=False, HMM=True))]).strip().replace('  ',' ')
+            line_x = " ".join(
+                [extract_chinese(word) for word in list(jieba.cut(ques, cut_all=False, HMM=True))]).strip().replace(
+                '  ', ' ')
             line_y = extract_chinese(label)
-            x_y.append(line_y+','+line_x+'\n')
+            x_y.append(line_y + ',' + line_x + '\n')
     return x_y
 
 
@@ -151,7 +153,7 @@ def delete_file(path):
         if os.path.isfile(path_children):
             if path_children.endswith(".h5") or path_children.endswith(".json"):
                 os.remove(path_children)
-        else:# 递归, 删除目录下的所有文件
+        else:  # 递归, 删除目录下的所有文件
             delete_file(path_children)
 
 
@@ -172,7 +174,7 @@ def get_ngram(text, ns=[1]):
         ngram_n = []
         for i in range(len_text):
             if i + n <= len_text:
-                ngram_n.append(text[i:i+n])
+                ngram_n.append(text[i:i + n])
             else:
                 break
         if not ngram_n:
@@ -199,6 +201,7 @@ class PreprocessText:
     """
         数据预处理, 输入为csv格式, [label,ques]
     """
+
     def __init__(self):
         self.l2i_i2l = None
         if os.path.exists(path_fast_text_model_l2i_i2l):
@@ -257,7 +260,7 @@ class PreprocessText:
             l2i_i2l = load_json(path_fast_text_model_l2i_i2l)
 
         len_ql = int(rate * len(ques))
-        if len_ql <= 500: # sample时候不生效,使得语料足够训练
+        if len_ql <= 500:  # sample时候不生效,使得语料足够训练
             len_ql = len(ques)
 
         x = []
@@ -266,7 +269,7 @@ class PreprocessText:
         for i in tqdm(range(len_ql)):
             que = ques_len_ql[i]
             que_embed = embed.sentence2idx(que)
-            x.append(que_embed) # [[], ]
+            x.append(que_embed)  # [[], ]
         label_zo = []
         print("label to onehot start!")
         label_len_ql = label[0:len_ql]
@@ -277,7 +280,7 @@ class PreprocessText:
             label_zo.append(label_zeros)
 
         count = 0
-        if embedding_type in  ['bert', 'albert']:
+        if embedding_type in ['bert', 'albert']:
             x_, y_ = np.array(x), np.array(label_zo)
             x_1 = np.array([x[0] for x in x_])
             x_2 = np.array([x[1] for x in x_])
@@ -307,6 +310,7 @@ class PreprocessTextMulti:
     """
         数据预处理, 输入为csv格式, [label,ques]
     """
+
     def __init__(self):
         self.l2i_i2l = None
         if os.path.exists(path_fast_text_model_l2i_i2l):
@@ -366,8 +370,9 @@ class PreprocessTextMulti:
             ques, label = ques[indexs].tolist(), label[indexs].tolist()
 
         if not os.path.exists(path_fast_text_model_l2i_i2l):
-            from keras_textclassification.conf.path_config import path_byte_multi_news_label
-            byte_multi_news_label = txt_read(path_byte_multi_news_label)
+            # from keras_textclassification.conf.path_config import path_byte_multi_news_label
+            # byte_multi_news_label = txt_read(path_byte_multi_news_label)
+            byte_multi_news_label = txt_read("../nlp_2/data/labels.csv")
             byte_multi_news_label = [i.strip().upper() for i in byte_multi_news_label]
 
             label_set = set(byte_multi_news_label)
@@ -388,13 +393,14 @@ class PreprocessTextMulti:
             l2i_i2l = load_json(path_fast_text_model_l2i_i2l)
             len_label_set = len(l2i_i2l['l2i'])
 
-
         x = []
         print("ques to index start!")
         for i in tqdm(range(len_ql)):
             que = ques[i]
             que_embed = embed.sentence2idx(que)
             x.append(que_embed)  # [[], ]
+            # if i <= 20:
+            #     print(i,ques[i])
 
         print('que_embed ok!')
 
@@ -409,15 +415,18 @@ class PreprocessTextMulti:
             label_single_index = [l2i_i2l['l2i'][ls] for ls in label_single]
             label_multi = transform_multilabel_to_multihot(label_single_index, label=len_label_set)
             label_multi_list.append(label_multi)
+            # if j <= 20:
+            #     print(j,l)
 
         print('label_multi_list ok!')
         count = 0
-        if embedding_type in  ['bert', 'albert']:
+        if embedding_type in ['bert', 'albert']:
+            print("go bert")
             x_, y_ = np.array(x), np.array(label_multi_list)
             x_1 = np.array([x[0] for x in x_])
             x_2 = np.array([x[1] for x in x_])
             x_all = [x_1, x_2]
-            return x_all, y_
+            return x_all, y_,ques,label
         elif embedding_type == 'xlnet':
             count += 1
             if count == 1:
@@ -431,13 +440,14 @@ class PreprocessTextMulti:
             return x_all, y_
         else:
             x_, y_ = np.array(x), np.array(label_multi_list)
-            return x_, y_
+            return x_, y_,ques,label
 
 
 class PreprocessSim:
     """
         数据预处理, 输入为csv格式, [label,ques]
     """
+
     def __init__(self):
         self.l2i_i2l = None
         if os.path.exists(path_fast_text_model_l2i_i2l):
@@ -501,7 +511,7 @@ class PreprocessSim:
             l2i_i2l = load_json(path_fast_text_model_l2i_i2l)
 
         len_ql = int(rate * len(label))
-        if len_ql <= 500: # sample时候不生效,使得语料足够训练
+        if len_ql <= 500:  # sample时候不生效,使得语料足够训练
             len_ql = len(label)
 
         x = []
@@ -510,7 +520,7 @@ class PreprocessSim:
             que_1 = ques_1[i]
             que_2 = ques_2[i]
             que_embed = embed.sentence2idx(text=que_1, second_text=que_2)
-            x.append(que_embed) # [[], ]
+            x.append(que_embed)  # [[], ]
         label_zo = []
         print("label to onehot start!")
         label_len_ql = label[0:len_ql]
@@ -520,7 +530,7 @@ class PreprocessSim:
             label_zeros[l2i_i2l['l2i'][label_one]] = 1
             label_zo.append(label_zeros)
 
-        if embedding_type in  ['bert', 'albert']:
+        if embedding_type in ['bert', 'albert']:
             x_, y_ = np.array(x), np.array(label_zo)
             x_1 = np.array([x[0] for x in x_])
             x_2 = np.array([x[1] for x in x_])
@@ -546,6 +556,7 @@ class PreprocessSimConv2019:
     """
         数据预处理, 输入为csv格式, [label,ques]
     """
+
     def __init__(self):
         self.l2i_i2l = None
         if os.path.exists(path_fast_text_model_l2i_i2l):
@@ -591,7 +602,8 @@ class PreprocessSimConv2019:
             label = np.array(label)
             indexs = [ids for ids in range(len(label))]
             random.shuffle(indexs)
-            ques_1, ques_2, label, category = ques_1[indexs].tolist(), ques_2[indexs].tolist(), label[indexs].tolist(), category[indexs].tolist()
+            ques_1, ques_2, label, category = ques_1[indexs].tolist(), ques_2[indexs].tolist(), label[indexs].tolist(), \
+                                              category[indexs].tolist()
         # 如果label2index存在则不转换了
         if not os.path.exists(path_fast_text_model_l2i_i2l):
             label_set = set(label)
@@ -611,7 +623,7 @@ class PreprocessSimConv2019:
             l2i_i2l = load_json(path_fast_text_model_l2i_i2l)
 
         len_ql = int(rate * len(label))
-        if len_ql <= 500: # sample时候不生效,使得语料足够训练
+        if len_ql <= 500:  # sample时候不生效,使得语料足够训练
             len_ql = len(label)
 
         x = []
@@ -622,12 +634,12 @@ class PreprocessSimConv2019:
             que_1 = ques_1[i]
             que_2 = ques_2[i]
             category_3 = category[i]
-            que_embed = embed.sentence2idx(text=category_3+":"+que_1, second_text=category_3+":"+que_2)
+            que_embed = embed.sentence2idx(text=category_3 + ":" + que_1, second_text=category_3 + ":" + que_2)
 
             # que_embed = embed.sentence2idx(text=category_3+":"+que_1, second_text=category_3+":"+que_2)
             # que_embed = embed.sentence2idx(text=que_1, second_text=que_2)
-            x.append(que_embed) # [[], ]
-            len_ques_list.append(len(que_1+que_2))
+            x.append(que_embed)  # [[], ]
+            len_ques_list.append(len(que_1 + que_2))
             label_list.append(category_3)
         len_ques_counter = Counter(len_ques_list)
         label_counter = Counter(label_list)
@@ -644,7 +656,7 @@ class PreprocessSimConv2019:
             label_zeros[l2i_i2l['l2i'][label_one]] = 1
             label_zo.append(label_zeros)
 
-        if embedding_type in  ['bert', 'albert']:
+        if embedding_type in ['bert', 'albert']:
             x_, y_ = np.array(x), np.array(label_zo)
             x_1 = np.array([x[0] for x in x_])
             x_2 = np.array([x[1] for x in x_])
@@ -654,4 +666,3 @@ class PreprocessSimConv2019:
             x_, y_ = np.array(x), np.array(label_zo)
 
             return x_, y_
-

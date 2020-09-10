@@ -29,6 +29,8 @@ class graph:
         self.trainable = hyper_parameters.get('trainable', False)  # 是否微调, 例如静态词向量、动态词向量、微调bert层等, random也可以
         self.embedding_type = hyper_parameters.get('embedding_type', 'word2vec')  # 词嵌入方式，可以选择'xlnet'、'bert'、'gpt-2'、'word2vec'或者'None'
         self.gpu_memory_fraction = hyper_parameters.get('gpu_memory_fraction', None) # gpu使用率, 默认不配置
+        self.ifChangeOutput=hyper_parameters.get('ifChangeOutput',False)
+
         self.hyper_parameters = hyper_parameters
         hyper_parameters_model = hyper_parameters['model']
         self.label = hyper_parameters_model.get('label', 2)  # 类型
@@ -53,6 +55,7 @@ class graph:
         self.path_fineture = hyper_parameters_model.get('path_fineture', path_fineture) # embedding层保存地址, 例如静态词向量、动态词向量、微调bert层等
         self.patience = hyper_parameters_model.get('patience', 3) # 早停, 2-3就可以了
         self.optimizer_name = hyper_parameters_model.get('optimizer_name', 'Adam') # 早停, 2-3就可以了
+
         if self.gpu_memory_fraction:
             # keras, tensorflow控制GPU使用率等
             import tensorflow as tf
@@ -61,12 +64,12 @@ class graph:
             # config.gpu_options.allow_growth = True
             sess = tf.Session(config=config)
             K.set_session(sess)
-        self.create_model(hyper_parameters)
+        self.create_model(hyper_parameters,self.ifChangeOutput)
         if self.is_training: # 是否是训练阶段, 与预测区分开
             self.create_compile()
 
 
-    def create_model(self, hyper_parameters):
+    def create_model(self, hyper_parameters,if_set=False):
         """
             构建神经网络
         :param hyper_parameters: json，超参数

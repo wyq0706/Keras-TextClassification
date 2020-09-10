@@ -448,7 +448,7 @@ class AlbertEmbedding(BaseEmbedding):
         import json
         config = {}
         for file_name in os.listdir(self.corpus_path):
-            if file_name.startswith('bert_config.json'):
+            if file_name.startswith('albert_config_base.json'):
                 with open(os.path.join(self.corpus_path, file_name)) as reader:
                     config = json.load(reader)
                 break

@@ -20,7 +20,7 @@ class TextCNNGraph(graph):
         """
         super().__init__(hyper_parameters)
 
-    def create_model(self, hyper_parameters):
+    def create_model(self, hyper_parameters,ifSet=False):
         """
             构建神经网络
         :param hyper_parameters:json,  hyper parameters of network
@@ -28,6 +28,9 @@ class TextCNNGraph(graph):
         """
         super().create_model(hyper_parameters)
         embedding = self.word_embedding.output
+        print(embedding.shape)
+        print(self.len_max)
+        print(self.embed_size)
         embedding_reshape = Reshape((self.len_max, self.embed_size, 1))(embedding)
         # 提取n-gram特征和最大池化， 一般不用平均池化
         conv_pools = []
@@ -47,6 +50,14 @@ class TextCNNGraph(graph):
         x = Concatenate(axis=-1)(conv_pools)
         x = Flatten()(x)
         x = Dropout(self.dropout)(x)
-        output = Dense(units=self.label, activation=self.activate_classify)(x)
+        if not ifSet:
+            output = Dense(units=self.label, activation=self.activate_classify)(x)
+        else:
+            output = Dense(units=self.label, activation=self.special_activation)(x)
         self.model = Model(inputs=self.word_embedding.input, outputs=output)
         self.model.summary(120)
+
+    def special_activation(self,x):
+        import tensorflow as tf
+        return tf.concat([tf.keras.activations.softmax(x[:,0:3]),tf.keras.activations.sigmoid(x[:,3:])],-1)
+        # return tf.keras.activations.softmax(x)
